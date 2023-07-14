@@ -102,14 +102,14 @@ function replaceString(inputString) {
 }
 
 function uwuify(message: string): string {
-    const rule = /\b[a-zA-Z0-9]+\b|\s+|\S/g;
+    const rule = /\S+|\s+/g;
     const words: string[] | null = message.match(rule);
     let answer = "";
 
     if (words === null) return "";
 
     for (let i = 0; i < words.length; i++) {
-        if (isOneCharacterString(words[i])) {
+        if (isOneCharacterString(words[i]) || words[i].startsWith("https://")) {
             answer += words[i];
             continue;
         }
