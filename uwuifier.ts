@@ -75,6 +75,12 @@ const settings = definePluginSettings({
         type: OptionType.BOOLEAN,
         default: false,
         restartNeeded: false
+    },
+    uwuEverything: {
+        description: "Makes *all* text uwuified - really bad idea",
+        type: OptionType.BOOLEAN,
+        default: false,
+        restartNeeded: true
     }
 });
 
@@ -126,6 +132,19 @@ function uwuify(message: string): string {
     return answer;
 }
 
+function uwuifyArray(arr) {
+    const newArr = [...arr];
+
+    newArr.forEach((item, index) => {
+        if (Array.isArray(item)) {
+            newArr[index] = uwuifyArray(item);
+        } else if (typeof item === "string") {
+            newArr[index] = uwuify(item);
+        }
+    });
+
+    return newArr;
+}
 
 
 // actual command declaration
@@ -147,6 +166,30 @@ export default definePlugin({
             }),
         },
     ],
+
+    patches: [{
+        find: ".isPureReactComponent=!0;",
+        predicate: () => settings.store.uwuEverything,
+        replacement: {
+            match: /(?<=.defaultProps\)void 0.{0,60})props:(\i)/,
+            replace: "props:$self.uwuifyProps($1)"
+        }
+    }, {
+        find: ".__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentOwner",
+        predicate: () => settings.store.uwuEverything,
+        replacement: {
+            match: /(?<=.defaultProps\)void 0.{0,60})props:(\i)/,
+            replace: "props:$self.uwuifyProps($1)"
+        },
+        all: true
+    }],
+
+    uwuifyProps(props: any) {
+        if (!props.children) return props;
+        if (typeof props.children === "string") props.children = uwuify(props.children);
+        else if (Array.isArray(props.children)) props.children = uwuifyArray(props.children);
+        return props;
+    },
 
     onSend(msg: MessageObject) {
         // Only run when it's enabled
